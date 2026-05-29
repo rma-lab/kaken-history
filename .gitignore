@@ -1,0 +1,13 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# 入力データ（科研費XML: サイズ大・研究者の個人情報を含むため公開しない）
+*.xml
+
+# 生成物
+output/
