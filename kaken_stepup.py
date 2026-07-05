@@ -143,17 +143,14 @@ def analyze(erad, path):
     }
 
 
-def render_histogram(with_large, path):
-    """所要年数のヒストグラムPDF。大型未取得の研究者は含めない。"""
-    import matplotlib.pyplot as plt
+def draw_histogram(ax, ys):
+    """所要年数リスト ys のヒストグラムを ax に描く（図の入れ物は呼び出し側）。"""
     from collections import Counter
 
-    ys = [r["years_to_large"] for r in with_large]
     counts = Counter(ys)
     xs = list(range(0, max(ys) + 1))
     median = sorted(ys)[len(ys) // 2]
 
-    fig, ax = plt.subplots(figsize=(8, 5))
     ax.bar(xs, [counts.get(x, 0) for x in xs], width=0.85,
            color="#34495e", zorder=3)
     ax.axvline(median, color="#c0392b", linestyle="--", linewidth=1.2, zorder=4)
@@ -168,6 +165,14 @@ def render_histogram(with_large, path):
     ax.grid(axis="y", linestyle=":", color="#ccc", zorder=0)
     for s in ("top", "right"):
         ax.spines[s].set_visible(False)
+
+
+def render_histogram(with_large, path):
+    """所要年数のヒストグラムPDF。大型未取得の研究者は含めない。"""
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    draw_histogram(ax, [r["years_to_large"] for r in with_large])
     note = ("大型科研費 = 基盤研究(B)/(A)/(S)・特別推進・挑戦的(開拓)・領域代表。"
             "研究代表者としての採択のみ。\n大型未取得の研究者は含まない。")
     if FIRST_YEAR_MIN is not None:
