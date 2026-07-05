@@ -5,27 +5,30 @@
 氏名・研究者番号を含まないため、生成物の中では公開できる体裁。
 
 使い方:
-    .venv/bin/python kaken_report.py    # → output/kaken_report.pdf
+    .venv/bin/python kaken_report.py jaist
+    .venv/bin/python kaken_report.py fukushima
+    # → output/kaken_report_<機関キー>.pdf
 """
 import datetime
-from pathlib import Path
+import sys
 
 import matplotlib.pyplot as plt
 
 from kaken_gantt import A4_W, A4_H
-from kaken_stepup import DATA_DIR, FIRST_YEAR_MIN, analyze, draw_histogram
-
-OUT_PATH = Path("output/kaken_report.pdf")
+from kaken_inst import inst_name, key_from_args, paths
+from kaken_stepup import FIRST_YEAR_MIN, analyze, draw_histogram
 
 INK = "#222222"
 SUB = "#555555"
 
 
-def collect():
+def collect(data_dir):
     """集計を実行してレポートに埋める数値一式を返す。"""
-    n_roster = len(list(DATA_DIR.glob("*.xml")))
-    rows = [r for r in (analyze(p.stem, p) for p in sorted(DATA_DIR.glob("*.xml"))) if r]
+    n_roster = len(list(data_dir.glob("*.xml")))
+    rows = [r for r in (analyze(p.stem, p) for p in sorted(data_dir.glob("*.xml"))) if r]
     ys = sorted(r["years_to_large"] for r in rows if r["years_to_large"] is not None)
+    from collections import Counter
+    counts = Counter(ys)
     return {
         "n_roster": n_roster,
         "n_analyzed": len(rows),
@@ -35,7 +38,8 @@ def collect():
         "q1": ys[len(ys) // 4],
         "q3": ys[3 * len(ys) // 4],
         "max": ys[-1],
-        "n_zero": sum(1 for y in ys if y == 0),
+        "n_zero": counts.get(0, 0),
+        "mode_count": max(counts.values()),
         "ys": ys,
     }
 
@@ -49,7 +53,10 @@ def section(fig, y, title, body, body_size=8.8):
 
 
 def main():
-    s = collect()
+    key, _ = key_from_args(sys.argv[1:])
+    name = inst_name(key)
+    p = paths(key)
+    s = collect(p["researchers"])
     today = datetime.date.today().isoformat()
 
     fig = plt.figure(figsize=(A4_W, A4_H))
@@ -57,7 +64,7 @@ def main():
     # --- タイトル ---
     fig.text(0.5, 0.955, "大型科研費獲得までの道のり", ha="center",
              fontsize=17, fontweight="bold", color=INK)
-    fig.text(0.5, 0.933, "— JAIST 研究者の科研費採択履歴にみる、最初の採択から大型種目までの年数 —",
+    fig.text(0.5, 0.933, f"— {name}の研究者の科研費採択履歴にみる、最初の採択から大型種目までの年数 —",
              ha="center", fontsize=10, color=SUB)
 
     # --- 本文 ---
@@ -67,8 +74,8 @@ def main():
         "採択されてから何年で大型種目に到達しているか。")
 
     y = section(fig, y, "■ データと方法",
-        f"・母集団: 科研費に参画したことがあり、JAISTに一度でも所属した研究者 {s['n_roster']}人\n"
-        "　（KAKEN の機関検索でJAISTの全課題を取得し、研究代表者と JAIST 所属メンバーを収集）。\n"
+        f"・母集団: 科研費に参画したことがあり、{name}に一度でも所属した研究者 {s['n_roster']}人\n"
+        f"　（KAKEN の機関検索で{name}の全課題を取得し、研究代表者と所属メンバーを収集）。\n"
         "・各研究者について KAKEN（NII）OpenSearch API から生涯の全採択課題を取得（全年代）。\n"
         f"・分析対象: 研究代表者としての採択があり、最初の採択が {FIRST_YEAR_MIN} 年度以降"
         f"（基盤研究制度の開始年）の {s['n_analyzed']}人。\n"
@@ -77,20 +84,21 @@ def main():
         "　新学術領域・学術変革領域(A)(B)の領域代表。いずれも研究代表者としての採択のみ。\n"
         "・所要年数 = 大型種目の初採択の開始年度 − 最初の科研費の開始年度。")
 
+    zero_note = f"・「0年」（研究代表者としての初採択がそのまま大型）が {s['n_zero']}人"
+    zero_note += "と最頻。\n" if s["n_zero"] == s["mode_count"] else "。\n"
     y = section(fig, y, "■ 結果",
         f"・分析対象 {s['n_analyzed']}人のうち、大型科研費の獲得経験があるのは "
         f"{s['n_large']}人（{100 * s['n_large'] / s['n_analyzed']:.0f}%）。\n"
         f"・所要年数は中央値 {s['median']}年（四分位範囲 {s['q1']}–{s['q3']}年、最長 {s['max']}年）。\n"
-        f"・「0年」（研究代表者としての初採択がそのまま大型）が {s['n_zero']}人と最頻。\n"
-        "　着任前の所属で実績を積んだシニア採用者のパターンで、紐付け不良ではないことを確認済み。\n"
-        "・それ以外は 1〜10 年に緩やかな山があり（若手・基盤(C)等を経る積み上げ型）、\n"
-        "　10年台後半〜20年超の長い経路も一定数存在する。")
+        + zero_note +
+        "　これは主に、着任前の所属で実績を積んだ研究者が代表としていきなり大型を得るパターン。\n"
+        "・分布の詳細は下図のとおり（若手・基盤(C)等を経る積み上げ型はプラスの年数側）。")
 
     y = section(fig, y, "■ 留意点",
         f"・大型未獲得の {s['n_no_large']}人はヒストグラムに含まれない。この中には「まだ獲得して\n"
         "　いないだけ」の若手も多く、右打ち切りがある（長い所要年数ほど観測されにくい）。\n"
         "・分担者としての参画は実績に数えていない。不採択・応募行動は KAKEN からは観測できない。\n"
-        "・JAIST という一機関の在籍経験者に限った集計であり、一般化には注意。")
+        f"・{name}という一機関の在籍経験者に限った集計であり、一般化には注意。")
 
     # --- ヒストグラム（下部）---
     ax = fig.add_axes([0.09, 0.085, 0.85, y - 0.13])
@@ -100,10 +108,10 @@ def main():
     fig.text(0.09, 0.018, f"データ: 科学研究費助成事業データベース KAKEN（国立情報学研究所） / 取得・集計: {today}",
              fontsize=7, color=SUB)
 
-    OUT_PATH.parent.mkdir(exist_ok=True)
-    fig.savefig(OUT_PATH)
+    p["report"].parent.mkdir(exist_ok=True)
+    fig.savefig(p["report"])
     plt.close(fig)
-    print(f"出力: {OUT_PATH}")
+    print(f"出力: {p['report']}")
 
 
 if __name__ == "__main__":

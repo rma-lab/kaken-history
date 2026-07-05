@@ -72,16 +72,34 @@ pdftoppm -png -r 80 -f 1 -l 1 output/kaken_gantt.pdf /tmp/page
   - 用途は自己分析・所属機関内の把握を想定。個人比較・評価目的での再配布は想定しない。
   - 必要なら匿名化（氏名/番号を伏せる）や集計ビュー（人を特定しない）への切り替えを検討する。
 
+## 機関別の分析パイプライン
+
+**機関はパラメータ化**されている（`kaken_inst.py` の `INSTITUTIONS`、キー例: `jaist` / `fukushima`）。
+データは `data/<機関キー>/`（all.xml・erads.txt・researchers/・stepup.csv）、
+生成物は `output/*_<機関キー>.pdf`。新しい機関はキーと正式名称を1行足すだけ。
+
+実行順（機関キーを引数に渡す。省略時は jaist）:
+```bash
+.venv/bin/python kaken_roster.py fukushima        # 機関の全課題→母集団リスト
+.venv/bin/python kaken_fetch.py fukushima         # 研究者ごとの生涯全課題を取得
+.venv/bin/python kaken_stepup.py fukushima        # 所要年数の集計+ヒストグラム
+.venv/bin/python kaken_stepup_gantt.py fukushima  # 相対年アラインのガント
+.venv/bin/python kaken_report.py fukushima        # A4縦1枚レポート
+```
+
 ## データ取得（kaken_fetch.py）と採択前実績の集計（kaken_stepup.py）
 
-エクスポートXMLは検索範囲外・他機関時代の課題を含まないため、
+機関単位の検索結果は検索範囲外・他機関時代の課題を含まないため、
 **KAKEN OpenSearch API で研究者ごとに全件取得し直す**（懸念は実データで確認済み。
 例: エクスポート12課題 → API 26課題）。
 
 - API: `https://kaken.nii.ac.jp/opensearch/?appid=…&format=xml&qm=<eRad>&rw=500&st=…`
   - **appid 必須**（取得済み。`.env` の `KAKEN_APP_ID`、git 除外）。無いと 403。
   - `qm`=研究者番号は**全ロール**（代表・分担…）にマッチ。ロールの絞り込みはパース側で行う。
-- `kaken_fetch.py`: エクスポートXMLの研究代表者245人ぶんを `data/researchers/<erad>.xml` に保存。
+- `kaken_roster.py`: 機関名で全課題を検索し（`qe`・年度制限なし）、母集団
+  （JAIST方式: 実施機関にその機関を含む課題のPI ∪ affiliation がその機関のメンバー）
+  の eRad リストを `data/<key>/erads.txt` に保存。
+- `kaken_fetch.py`: 母集団全員の生涯全課題を `data/<key>/researchers/<erad>.xml` に保存。
   取得済みはスキップ（`--force` で上書き）。1秒間隔のポライトアクセス。
 - `kaken_stepup.py`: 「最初の科研費 → 大型科研費の初採択」の所要年数を集計 → `data/stepup.csv`。
   - **最初の科研費** = PIとしての初採択。分担除外・特別研究員奨励費除外・declined除外。
@@ -91,9 +109,9 @@ pdftoppm -png -r 80 -f 1 -l 1 output/kaken_gantt.pdf /tmp/page
     とみなす（計画研究・公募研究の代表は含めない）。※現245人に領域代表は0人。
 - **母集団**: 「科研費に関わったことがあり、JAISTに一度でも所属した人」= 484人。
   作り方: APIの機関検索（`qe=北陸先端科学技術大学院大学`、年度制限なし、全1440課題
-  → `data/jaist_all.xml`）から、(a) 実施機関にJAISTを含む課題のPI、
+  → `data/jaist/all.xml`）から、(a) 実施機関にJAISTを含む課題のPI、
   (b) `memberList/member/attribute/affiliation/institution` がJAISTのメンバー（全ロール）
-  の eRad を集めた和集合 → `data/jaist_erads.txt`。
+  の eRad を集めた和集合 → `data/jaist/erads.txt`（この手順は kaken_roster.py に一般化済み）。
   - 限界: eRadの無い記録（特別研究員等・古い記録）は追跡不能。JAIST在籍中に
     **他機関の課題に分担参加しただけ**の人は `qe` 検索にほぼ載らず漏れる（僅少とみなす）。
   - 旧エクスポートXML（機関=JAIST×2011年度以降、245人）はこの母集団の部分集合。

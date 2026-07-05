@@ -11,24 +11,25 @@ kaken_fetch.py で取得した生涯実績（data/researchers/<erad>.xml）の�
   - 表示する課題は集計と同じ条件（PIのみ・特別研究員奨励費除外・declined除外）。
 
 使い方:
-    .venv/bin/python kaken_stepup_gantt.py     # → output/kaken_stepup_gantt.pdf
+    .venv/bin/python kaken_stepup_gantt.py jaist
+    .venv/bin/python kaken_stepup_gantt.py fukushima
+    # → output/kaken_stepup_gantt_<機関キー>.pdf
 """
-from pathlib import Path
+import sys
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
 import kaken_gantt as kg
-from kaken_stepup import (DATA_DIR, EXCLUDE_FIRST, FIRST_YEAR_MIN, is_large,
+from kaken_inst import key_from_args, paths
+from kaken_stepup import (EXCLUDE_FIRST, FIRST_YEAR_MIN, is_large,
                           pi_projects, researcher_name)
 
-OUT_PATH = Path("output/kaken_stepup_gantt.pdf")
 
-
-def load_aligned():
+def load_aligned(data_dir):
     """大型持ちの研究者を、課題年度を相対年に変換して返す（所要年数の短い順）。"""
     researchers = []
-    for path in sorted(DATA_DIR.glob("*.xml")):
+    for path in sorted(data_dir.glob("*.xml")):
         erad = path.stem
         projects = [p for p in pi_projects(path, erad)
                     if p["category"] not in EXCLUDE_FIRST]
@@ -55,12 +56,14 @@ def load_aligned():
 
 
 def main():
-    researchers = load_aligned()
+    key, _ = key_from_args(sys.argv[1:])
+    p = paths(key)
+    researchers = load_aligned(p["researchers"])
     year_min, year_max = kg.axis_range(researchers)
     pages = kg.paginate(researchers)
 
-    OUT_PATH.parent.mkdir(exist_ok=True)
-    with PdfPages(OUT_PATH) as pdf:
+    p["gantt"].parent.mkdir(exist_ok=True)
+    with PdfPages(p["gantt"]) as pdf:
         for page in pages:
             fig = plt.figure(figsize=(kg.A4_W, kg.A4_H))
             ax = kg.render_page(fig, page, year_min, year_max)
@@ -79,7 +82,7 @@ def main():
 
     print(f"対象: 大型科研費あり {len(researchers)}人（所要年数の短い順）")
     print(f"相対年の範囲: {year_min:+d} 〜 {year_max:+d}")
-    print(f"出力: {OUT_PATH}  （{len(pages)}ページ・A4縦）")
+    print(f"出力: {p['gantt']}  （{len(pages)}ページ・A4縦）")
 
 
 if __name__ == "__main__":

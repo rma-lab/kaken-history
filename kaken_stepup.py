@@ -12,7 +12,9 @@
   - 所要年数 = 大型の開始年度 - 最初の科研費の開始年度。
 
 使い方:
-    .venv/bin/python kaken_stepup.py           # 集計して表示 + data/stepup.csv
+    .venv/bin/python kaken_stepup.py jaist
+    .venv/bin/python kaken_stepup.py fukushima
+    # → data/<機関キー>/stepup.csv, output/kaken_stepup_hist_<機関キー>.pdf
 """
 import csv
 import sys
@@ -20,10 +22,7 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 
 from kaken_gantt import find_lang, normalize_category, text, PI_ROLE
-
-DATA_DIR = Path("data/researchers")
-OUT_CSV = Path("data/stepup.csv")
-OUT_HIST = Path("output/kaken_stepup_hist.pdf")
+from kaken_inst import key_from_args, paths
 
 # 「大型科研費」とみなす種目（normalize_category 後の名称）
 LARGE_CATEGORIES = {
@@ -186,8 +185,10 @@ def render_histogram(with_large, path):
 
 
 def main():
+    key, _ = key_from_args(sys.argv[1:])
+    p = paths(key)
     rows = []
-    for path in sorted(DATA_DIR.glob("*.xml")):
+    for path in sorted(p["researchers"].glob("*.xml")):
         row = analyze(path.stem, path)
         if row:
             rows.append(row)
@@ -195,8 +196,8 @@ def main():
     with_large = [r for r in rows if r["large_year"] is not None]
     without = [r for r in rows if r["large_year"] is None]
 
-    OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
-    with open(OUT_CSV, "w", newline="") as f:
+    p["csv"].parent.mkdir(parents=True, exist_ok=True)
+    with open(p["csv"], "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
         w.writeheader()
         w.writerows(rows)
@@ -217,10 +218,10 @@ def main():
         for y in range(ys[0], ys[-1] + 1):
             print(f"  {y:3d}年: {'#' * c.get(y, 0)} {c.get(y, '') if c.get(y) else ''}")
     if with_large:
-        render_histogram(with_large, OUT_HIST)
-        print(f"\n出力: {OUT_CSV} / {OUT_HIST}")
+        render_histogram(with_large, p["hist"])
+        print(f"\n出力: {p['csv']} / {p['hist']}")
     else:
-        print(f"\n出力: {OUT_CSV}")
+        print(f"\n出力: {p['csv']}")
 
 
 if __name__ == "__main__":
