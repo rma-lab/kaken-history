@@ -14,8 +14,9 @@ API仕様: https://bitbucket.org/niijp/kaken_definition
     # appid は .env の KAKEN_APP_ID から読む（環境変数でも可）
     # 既存エクスポートXMLの研究代表者(245人)を全員取得
     .venv/bin/python kaken_fetch.py
-    # 研究者番号を指定して取得
+    # 研究者番号を指定して取得（番号の列挙 or 1行1番号のリストファイル）
     .venv/bin/python kaken_fetch.py 00343187 12345678
+    .venv/bin/python kaken_fetch.py data/jaist_erads.txt
     # 取得済みファイルも上書き
     .venv/bin/python kaken_fetch.py --force
 """
@@ -97,7 +98,14 @@ def main():
         sys.exit(".env に KAKEN_APP_ID を設定してください"
                  "（取得: https://support.nii.ac.jp/ja/cinii/api/developer）")
 
-    erads = [a for a in args if re.fullmatch(r"\d+", a)] or erads_from_export()
+    erads = []
+    for a in args:
+        if re.fullmatch(r"\d+", a):
+            erads.append(a)
+        elif Path(a).is_file():               # 1行1番号のリストファイル
+            erads.extend(x for x in Path(a).read_text().split()
+                         if re.fullmatch(r"\d+", x))
+    erads = erads or erads_from_export()
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
     done = skipped = failed = 0

@@ -23,6 +23,7 @@ from kaken_gantt import find_lang, normalize_category, text, PI_ROLE
 
 DATA_DIR = Path("data/researchers")
 OUT_CSV = Path("data/stepup.csv")
+OUT_HIST = Path("output/kaken_stepup_hist.pdf")
 
 # 「大型科研費」とみなす種目（normalize_category 後の名称）
 LARGE_CATEGORIES = {
@@ -55,6 +56,11 @@ def is_large(p):
 
 # 「最初の科研費」から除外する種目
 EXCLUDE_FIRST = {"特別研究員奨励費"}
+
+# 最初の科研費がこの年度より前の研究者は分析対象外にする。
+# 1996 = 基盤研究(A)(B)(C) 制度の開始年。これより古いキャリアは旧制度種目が主で
+# eRad 紐付けの信頼性も落ちるため除外（None で無効化）。
+FIRST_YEAR_MIN = 1996
 
 EXCLUDE_STATUS = {"declined"}    # 採択後辞退は実績に数えない
 
@@ -117,6 +123,8 @@ def analyze(erad, path):
     if not firsts:
         return None                       # PI課題なし（分析対象外）
     first = firsts[0]
+    if FIRST_YEAR_MIN is not None and first["start"] < FIRST_YEAR_MIN:
+        return None                       # 古い世代は分析対象外
     larges = [p for p in firsts if is_large(p)]
     large = larges[0] if larges else None
     before = [p for p in firsts
@@ -135,6 +143,43 @@ def analyze(erad, path):
     }
 
 
+def render_histogram(with_large, path):
+    """所要年数のヒストグラムPDF。大型未取得の研究者は含めない。"""
+    import matplotlib.pyplot as plt
+    from collections import Counter
+
+    ys = [r["years_to_large"] for r in with_large]
+    counts = Counter(ys)
+    xs = list(range(0, max(ys) + 1))
+    median = sorted(ys)[len(ys) // 2]
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.bar(xs, [counts.get(x, 0) for x in xs], width=0.85,
+           color="#34495e", zorder=3)
+    ax.axvline(median, color="#c0392b", linestyle="--", linewidth=1.2, zorder=4)
+    ax.text(median + 0.3, ax.get_ylim()[1] * 0.95, f"中央値 {median}年",
+            color="#c0392b", fontsize=10, va="top")
+    ax.set_xlabel("最初の科研費（研究代表者）から大型科研費の初採択までの年数")
+    ax.set_ylabel("人数")
+    ax.set_title(f"大型科研費までの所要年数（N={len(ys)}）", fontsize=12)
+    ax.set_xticks(xs)
+    ax.tick_params(labelsize=8)
+    ax.set_axisbelow(True)
+    ax.grid(axis="y", linestyle=":", color="#ccc", zorder=0)
+    for s in ("top", "right"):
+        ax.spines[s].set_visible(False)
+    note = ("大型科研費 = 基盤研究(B)/(A)/(S)・特別推進・挑戦的(開拓)・領域代表。"
+            "研究代表者としての採択のみ。\n大型未取得の研究者は含まない。")
+    if FIRST_YEAR_MIN is not None:
+        note += f"最初の科研費が{FIRST_YEAR_MIN}年度以降の研究者に限定。"
+    fig.text(0.5, 0.012, note, ha="center", va="bottom", fontsize=7,
+             color="#555", linespacing=1.5)
+    fig.tight_layout(rect=(0, 0.06, 1, 1))
+    path.parent.mkdir(exist_ok=True)
+    fig.savefig(path)
+    plt.close(fig)
+
+
 def main():
     rows = []
     for path in sorted(DATA_DIR.glob("*.xml")):
@@ -151,7 +196,7 @@ def main():
         w.writeheader()
         w.writerows(rows)
 
-    print(f"分析対象(PI課題あり): {len(rows)}人")
+    print(f"分析対象(PI課題あり・最初の科研費{FIRST_YEAR_MIN}年度以降): {len(rows)}人")
     print(f"  大型あり: {len(with_large)}人 / 大型なし: {len(without)}人")
     print(f"  大型の定義: {sorted(LARGE_CATEGORIES)}")
     print(f"  ＋領域代表(総括班PI): {sorted(AREA_LARGE_CATEGORIES)}")
@@ -166,7 +211,11 @@ def main():
         c = Counter(ys)
         for y in range(ys[0], ys[-1] + 1):
             print(f"  {y:3d}年: {'#' * c.get(y, 0)} {c.get(y, '') if c.get(y) else ''}")
-    print(f"\n出力: {OUT_CSV}")
+    if with_large:
+        render_histogram(with_large, OUT_HIST)
+        print(f"\n出力: {OUT_CSV} / {OUT_HIST}")
+    else:
+        print(f"\n出力: {OUT_CSV}")
 
 
 if __name__ == "__main__":

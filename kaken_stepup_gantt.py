@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
 import kaken_gantt as kg
-from kaken_stepup import (DATA_DIR, EXCLUDE_FIRST, is_large,
+from kaken_stepup import (DATA_DIR, EXCLUDE_FIRST, FIRST_YEAR_MIN, is_large,
                           pi_projects, researcher_name)
 
 OUT_PATH = Path("output/kaken_stepup_gantt.pdf")
@@ -34,6 +34,8 @@ def load_aligned():
                     if p["category"] not in EXCLUDE_FIRST]
         if not projects:
             continue
+        if FIRST_YEAR_MIN is not None and projects[0]["start"] < FIRST_YEAR_MIN:
+            continue                       # 古い世代は分析対象外（kaken_stepup と同条件）
         larges = [p for p in projects if is_large(p)]
         if not larges:
             continue
@@ -69,7 +71,8 @@ def main():
             ax.axvline(0, color="black", linestyle="--", linewidth=0.8, zorder=4)
             fig.text(0.5, 0.018,
                      "横軸=相対年（0 = 大型科研費〈基盤B/A/S・特別推進・挑戦的(開拓)等〉を"
-                     "研究代表者として初採択した開始年度）。黒枠がその課題。研究代表課題のみ表示。",
+                     "研究代表者として初採択した開始年度）。黒枠がその課題。研究代表課題のみ表示。"
+                     f"最初の科研費が{FIRST_YEAR_MIN}年度以降の研究者に限定。",
                      ha="center", va="bottom", fontsize=6.5, color="#555")
             pdf.savefig(fig)
             plt.close(fig)
