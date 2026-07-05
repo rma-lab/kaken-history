@@ -1,0 +1,123 @@
+#!/usr/bin/env python3
+"""KAKEN OpenSearch API から研究者ごとの全課題XMLを取得する。
+
+手元のエクスポートXMLは特定検索の結果であり、研究者の生涯フル実績を
+含まない可能性がある。そこで研究者番号(eRad)ごとに KAKEN を検索し直し、
+全課題（代表・分担など全ロール）を data/researchers/<erad>.xml に保存する。
+
+API仕様: https://bitbucket.org/niijp/kaken_definition
+  - エンドポイント: https://kaken.nii.ac.jp/opensearch/
+  - qm=研究者番号 / rw=1ページ件数(最大500) / st=開始番号(1始まり) / format=xml
+  - appid が必須（CiNii API利用登録: https://support.nii.ac.jp/ja/cinii/api/developer）
+
+使い方:
+    # appid は .env の KAKEN_APP_ID から読む（環境変数でも可）
+    # 既存エクスポートXMLの研究代表者(245人)を全員取得
+    .venv/bin/python kaken_fetch.py
+    # 研究者番号を指定して取得
+    .venv/bin/python kaken_fetch.py 00343187 12345678
+    # 取得済みファイルも上書き
+    .venv/bin/python kaken_fetch.py --force
+"""
+import os
+import re
+import sys
+import time
+import urllib.parse
+import urllib.request
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+import kaken_gantt
+
+API = "https://kaken.nii.ac.jp/opensearch/"
+RW = 500                     # 1リクエストの最大件数
+SLEEP = 1.0                  # リクエスト間隔（秒）。NIIに負荷をかけない
+DATA_DIR = Path("data/researchers")
+
+
+def fetch_page(appid, erad, st):
+    """1ページぶん取得して (grantAward要素のリスト, 生バイト列) を返す。"""
+    params = {"appid": appid, "format": "xml", "qm": erad, "rw": RW, "st": st}
+    url = API + "?" + urllib.parse.urlencode(params)
+    req = urllib.request.Request(url, headers={"User-Agent": "kaken-summary/0.1"})
+    with urllib.request.urlopen(req, timeout=60) as resp:
+        raw = resp.read()
+    root = ET.fromstring(raw)
+    if root.tag == "error":
+        raise RuntimeError(f"APIエラー: {ET.tostring(root, encoding='unicode')}")
+    # ルート直下でもネスト先でも grantAward を拾えるように iter で探す
+    return list(root.iter("grantAward")), raw
+
+
+def fetch_researcher(appid, erad):
+    """研究者番号 erad の全課題を取得して grantAward 要素のリストを返す。"""
+    awards, st = [], 1
+    while True:
+        page, _ = fetch_page(appid, erad, st)
+        awards.extend(page)
+        if len(page) < RW:      # 最終ページ（件数の事前取得に頼らずページング）
+            return awards
+        st += RW
+        time.sleep(SLEEP)
+
+
+def save(erad, awards, path):
+    """grantAward のリストをエクスポートXMLと同じ <grantAwards> 形式で保存。"""
+    root = ET.Element("grantAwards")
+    root.extend(awards)
+    ET.ElementTree(root).write(path, encoding="UTF-8", xml_declaration=True)
+
+
+def erads_from_export():
+    """既存エクスポートXMLから研究代表者の研究者番号一覧を得る。"""
+    researchers = kaken_gantt.parse(kaken_gantt.XML_DEFAULT)
+    return sorted(researchers)
+
+
+def load_appid():
+    """appid を環境変数 KAKEN_APP_ID / KAKEN_APPID または .env から読む。"""
+    for key in ("KAKEN_APP_ID", "KAKEN_APPID"):
+        if os.environ.get(key):
+            return os.environ[key]
+    env = Path(__file__).parent / ".env"
+    if env.exists():
+        for line in env.read_text().splitlines():
+            k, _, v = line.partition("=")
+            if k.strip() in ("KAKEN_APP_ID", "KAKEN_APPID") and v.strip():
+                return v.strip()
+    return ""
+
+
+def main():
+    appid = load_appid()
+    force = "--force" in sys.argv
+    args = [a for a in sys.argv[1:] if a != "--force"]
+    if not appid:
+        sys.exit(".env に KAKEN_APP_ID を設定してください"
+                 "（取得: https://support.nii.ac.jp/ja/cinii/api/developer）")
+
+    erads = [a for a in args if re.fullmatch(r"\d+", a)] or erads_from_export()
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+    done = skipped = failed = 0
+    for i, erad in enumerate(erads, 1):
+        path = DATA_DIR / f"{erad}.xml"
+        if path.exists() and not force:
+            skipped += 1
+            continue
+        try:
+            awards = fetch_researcher(appid, erad)
+            save(erad, awards, path)
+            done += 1
+            print(f"[{i}/{len(erads)}] {erad}: {len(awards)}課題")
+        except Exception as e:
+            failed += 1
+            print(f"[{i}/{len(erads)}] {erad}: 失敗 ({e})", file=sys.stderr)
+        time.sleep(SLEEP)
+
+    print(f"完了: 取得{done} / スキップ(取得済み){skipped} / 失敗{failed}")
+
+
+if __name__ == "__main__":
+    main()

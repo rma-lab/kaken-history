@@ -209,9 +209,11 @@ def render_page(fig, page, year_min, year_max):
         for i, p in enumerate(projects):
             y = top - 0.5 - i                  # 上から古い順
             span = p["end"] - p["start"] + 1
+            hl = p.get("highlight")            # 指標イベント（大型初採択）の強調枠
             ax.barh(y, span, left=p["start"], height=BAR_H,
-                    color=color_for(p["category"]), edgecolor="white",
-                    linewidth=0.5, zorder=3)
+                    color=color_for(p["category"]),
+                    edgecolor="black" if hl else "white",
+                    linewidth=1.0 if hl else 0.5, zorder=3.5 if hl else 3)
             ax.text(p["start"] + 0.1, y, " " + p["category"],
                     ha="left", va="center", color="white", fontsize=6.5,
                     fontweight="bold", zorder=4)
@@ -241,6 +243,7 @@ def render_page(fig, page, year_min, year_max):
     ax.grid(axis="x", linestyle=":", color="#ccc", zorder=0)
     for s in ("right", "left"):
         ax.spines[s].set_visible(False)
+    return ax
 
 
 def render_pdf(researchers, path):

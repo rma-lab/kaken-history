@@ -1,3 +1,6 @@
+# 秘密情報（KAKEN appid など）
+.env
+
 # Python
 .venv/
 __pycache__/
@@ -8,6 +11,7 @@ __pycache__/
 
 # 入力データ（科研費XML: サイズ大・研究者の個人情報を含むため公開しない）
 *.xml
+data/
 
 # 生成物
 output/
