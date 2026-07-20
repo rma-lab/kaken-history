@@ -115,25 +115,26 @@ def parse(src):
 
 
 # 種目ごとの色。表記は normalize_category 後の名称に合わせる。
+# 黒フォントのラベルを重ねるため、淡い色にしている（色は分類の目印、識別は主にラベル）。
 CATEGORY_COLORS = {
-    "基盤研究(S)": "#6c3483",
-    "基盤研究(A)": "#c0392b",
-    "基盤研究(B)": "#e67e22",
-    "基盤研究(C)": "#27ae60",
-    "挑戦的研究(開拓)": "#117a65",
-    "挑戦的研究(萌芽)": "#1abc9c",
-    "挑戦的萌芽研究": "#48c9b0",
-    "若手研究": "#2980b9",
-    "若手研究(A)": "#1f618d",
-    "若手研究(B)": "#5dade2",
-    "研究活動スタート支援": "#7f8c8d",
-    "特別研究員奨励費": "#95a5a6",
-    "新学術領域研究(研究領域提案型)": "#d35400",
-    "学術変革領域研究(A)": "#ca6f1e",
-    "学術変革領域研究(B)": "#e74c3c",
-    "奨励研究": "#aab7b8",
+    "基盤研究(S)": "#d2b4de",
+    "基盤研究(A)": "#f1948a",
+    "基盤研究(B)": "#f5c396",
+    "基盤研究(C)": "#a9dfbf",
+    "挑戦的研究(開拓)": "#a2d9ce",
+    "挑戦的研究(萌芽)": "#a3e4d7",
+    "挑戦的萌芽研究": "#d1f2eb",
+    "若手研究": "#aed6f1",
+    "若手研究(A)": "#a9cce3",
+    "若手研究(B)": "#d4e6f1",
+    "研究活動スタート支援": "#d5dbdb",
+    "特別研究員奨励費": "#d7dbdd",
+    "新学術領域研究(研究領域提案型)": "#edbb99",
+    "学術変革領域研究(A)": "#f5cba7",
+    "学術変革領域研究(B)": "#f5b7b1",
+    "奨励研究": "#e5e7e9",
 }
-_FALLBACK = ["#34495e", "#9b59b6", "#f39c12", "#16a085", "#2c3e50", "#c39bd3", "#d98880"]
+_FALLBACK = ["#d5d8dc", "#d7bde2", "#fad7a0", "#a3e4d7", "#aeb6bf", "#f9e79f", "#f5b7b1"]
 
 
 def color_for(cat, _cache={}):
@@ -222,9 +223,11 @@ def render_page(fig, page, year_min, year_max):
                     color=color_for(p["category"]),
                     edgecolor="black" if hl else "white",
                     linewidth=1.0 if hl else 0.5, zorder=3.5 if hl else 3)
+            # 種目名は黒フォント。バーが短いと入りきらないので右へはみ出してもよい
+            # （clip_on=False）。淡い色にしているので黒字でも読める。
             ax.text(p["start"] + 0.1, y, " " + p["category"],
-                    ha="left", va="center", color="white", fontsize=6.5,
-                    fontweight="bold", zorder=4)
+                    ha="left", va="center", color="black", fontsize=6.5,
+                    zorder=4, clip_on=False)
         # 氏名・研究者番号をグラフ左に（このブロックの縦中央）
         ycenter = top - n / 2
         ax.text(-0.012, ycenter, f"{r['name']}\n{r['erad']}",

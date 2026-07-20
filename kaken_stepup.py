@@ -157,19 +157,39 @@ def analyze(erad, path):
     })
 
 
+def median(vals):
+    """所要年数の中央値（vals は非空の数値リスト）。"""
+    s = sorted(vals)
+    return s[len(s) // 2]
+
+
 def draw_histogram(ax, ys):
-    """所要年数リスト ys のヒストグラムを ax に描く（図の入れ物は呼び出し側）。"""
+    """所要年数リスト ys のヒストグラムを ax に描く（図の入れ物は呼び出し側）。
+
+    中央値の線を2本引く:
+      - 赤: 全体（0年組＝初代表がいきなり大型、を含む）
+      - 青: 0年組を除く（積み上げ型のみ）
+    0年組を含めるかで中央値の意味が変わるため、両方を示す。
+    """
     from collections import Counter
 
     counts = Counter(ys)
     xs = list(range(0, max(ys) + 1))
-    median = sorted(ys)[len(ys) // 2]
+    m_all = median(ys)
+    ys_pos = [y for y in ys if y > 0]
+    m_pos = median(ys_pos) if ys_pos else None
 
-    ax.bar(xs, [counts.get(x, 0) for x in xs], width=0.85,
-           color="#34495e", zorder=3)
-    ax.axvline(median, color="#c0392b", linestyle="--", linewidth=1.2, zorder=4)
-    ax.text(median + 0.3, ax.get_ylim()[1] * 0.95, f"中央値 {median}年",
-            color="#c0392b", fontsize=10, va="top")
+    # ヒストグラムなのでビン間の隙間なし（width=1.0）。境目は細い白線で区切る。
+    ax.bar(xs, [counts.get(x, 0) for x in xs], width=1.0,
+           color="#34495e", edgecolor="white", linewidth=0.6, zorder=3)
+    top = ax.get_ylim()[1]
+    ax.axvline(m_all, color="#c0392b", linestyle="--", linewidth=1.2, zorder=4)
+    ax.text(m_all + 0.3, top * 0.96, f"中央値 {m_all}年\n（全体）",
+            color="#c0392b", fontsize=9, va="top")
+    if m_pos is not None:
+        ax.axvline(m_pos, color="#2471a3", linestyle="--", linewidth=1.2, zorder=4)
+        ax.text(m_pos + 0.3, top * 0.68, f"中央値 {m_pos}年\n（0年組を除く）",
+                color="#2471a3", fontsize=9, va="top")
     ax.set_xlabel("最初の科研費（研究代表者）から大型科研費の初採択までの年数")
     ax.set_ylabel("人数")
     ax.set_title(f"大型科研費までの所要年数（N={len(ys)}）", fontsize=12)

@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 from kaken_gantt import A4_W, A4_H
 from kaken_data import load_researchers
 from kaken_inst import inst_name, key_from_args, paths
-from kaken_stepup import FIRST_YEAR_MIN, analyze_researcher, draw_histogram
+from kaken_stepup import FIRST_YEAR_MIN, analyze_researcher, draw_histogram, median
 
 INK = "#222222"
 SUB = "#555555"
@@ -28,6 +28,7 @@ def collect(researchers):
     n_roster = len(researchers)
     rows = [r for r in (analyze_researcher(x) for x in researchers) if r]
     ys = sorted(r["years_to_large"] for r in rows if r["years_to_large"] is not None)
+    ys_pos = [y for y in ys if y > 0]        # 0年組（初代表がいきなり大型）を除く
     from collections import Counter
     counts = Counter(ys)
     return {
@@ -35,7 +36,8 @@ def collect(researchers):
         "n_analyzed": len(rows),
         "n_large": len(ys),
         "n_no_large": len(rows) - len(ys),
-        "median": ys[len(ys) // 2],
+        "median": median(ys),
+        "median_pos": median(ys_pos) if ys_pos else None,
         "q1": ys[len(ys) // 4],
         "q3": ys[3 * len(ys) // 4],
         "max": ys[-1],
@@ -99,7 +101,8 @@ def main():
     y = section(fig, y, "■ 結果",
         f"・分析対象 {s['n_analyzed']}人のうち、大型科研費の獲得経験があるのは "
         f"{s['n_large']}人（{100 * s['n_large'] / s['n_analyzed']:.0f}%）。\n"
-        f"・所要年数は中央値 {s['median']}年（四分位範囲 {s['q1']}–{s['q3']}年、最長 {s['max']}年）。\n"
+        f"・所要年数は中央値 {s['median']}年（0年組を含む全体。四分位範囲 {s['q1']}–{s['q3']}年、"
+        f"最長 {s['max']}年）。0年組を除くと中央値 {s['median_pos']}年。\n"
         + zero_note +
         "　代表デビューがキャリア中盤以降の研究者（民間企業・海外機関の出身で科研費への応募資格を\n"
         "　得たのが遅い、または分担参加のみで代表応募してこなかった）が、最初の代表応募から\n"
