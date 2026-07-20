@@ -28,7 +28,15 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-plt.rcParams["font.family"] = ["Hiragino Sans", "YuGothic", "Arial Unicode MS"]
+# 日本語フォントは環境依存（macOS=Hiragino、Linux/Colab=IPA系）。実際に入っている
+# ものだけを選び、findfont 警告を出さない。Noto CJK は言語指定なしだと中国語字形に
+# なるため候補に入れない（Colabでは fonts-ipafont-gothic の IPAGothic を使う）。
+import matplotlib.font_manager as _fm
+_JP_CANDIDATES = ["Hiragino Sans", "YuGothic", "Arial Unicode MS", "IPAexGothic", "IPAGothic"]
+_available = {f.name for f in _fm.fontManager.ttflist}
+_jp_fonts = [f for f in _JP_CANDIDATES if f in _available]
+if _jp_fonts:
+    plt.rcParams["font.family"] = _jp_fonts
 plt.rcParams["axes.unicode_minus"] = False
 plt.rcParams["pdf.fonttype"] = 42      # 日本語をTrueTypeで埋め込み（PDF出力に必須）
 

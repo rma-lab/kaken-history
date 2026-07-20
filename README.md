@@ -19,6 +19,35 @@
 2011 2012 2013 2014 2015 ... 2027
 ```
 
+## 大型科研費までの道のり分析（他機関でも使える・appid不要）
+
+所属機関の研究者が「最初の科研費 → 大型科研費（基盤研究(B)以上）」に何年で到達したかを
+集計し、レポート・ヒストグラム・相対年ガントのPDFを作ります。**KAKEN の appid や API は不要**。
+KAKEN「**研究者をさがす**」からダウンロードした JSON（人単位で生涯全課題を含む）を読み込むだけ。
+
+### Colab で使う（インストール不要・ブラウザだけ）
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/takayuki1997/kaken-summary/blob/main/kaken_colab.ipynb)
+
+1. 上のバッジから Colab を開く
+2. [KAKEN 研究者をさがす](https://nrid.nii.ac.jp/ja/) で **研究機関＝自機関** を検索 →
+   結果画面で **Select All → Export in JSON**（1回1万件まで。超える大規模機関は分割）
+3. Colab のセルを上から実行し、JSON をアップロード → 機関名を入力 → PDF をダウンロード
+
+アップロードした JSON は Colab セッション上でのみ処理され、閉じれば消えます（外部保存はしません）。
+
+### ローカル（venv）で使う
+
+```bash
+# data/<機関キー>/researchers.json に研究者JSONを置く
+.venv/bin/python kaken_stepup.py       <機関キー>   # 所要年数の集計＋ヒストグラム
+.venv/bin/python kaken_report.py       <機関キー>   # A4縦1枚レポート
+.venv/bin/python kaken_stepup_gantt.py <機関キー>   # 相対年アラインのガント
+```
+
+機関キーは `kaken_inst.py` の `INSTITUTIONS` に「キー→正式名称」を1行足して登録します。
+`data/<機関キー>/researchers.json` があればそれを、無ければ従来の API 取得 XML を自動で使います。
+
 ## 必要環境
 
 - Python 3.10+

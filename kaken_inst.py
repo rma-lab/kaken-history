@@ -30,7 +30,8 @@ def paths(key):
         "root": root,
         "all_xml": root / "all.xml",           # 機関検索の全課題
         "erads": root / "erads.txt",           # 母集団の研究者番号リスト
-        "researchers": root / "researchers",   # 研究者ごとの生涯全課題XML
+        "researchers": root / "researchers",   # 研究者ごとの生涯全課題XML（API方式）
+        "json": root / "researchers.json",     # 研究者検索JSONエクスポート（appid不要）
         "csv": root / "stepup.csv",
         "hist": out / f"kaken_stepup_hist_{key}.pdf",
         "gantt": out / f"kaken_stepup_gantt_{key}.pdf",

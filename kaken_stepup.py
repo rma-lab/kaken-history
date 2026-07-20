@@ -22,6 +22,7 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 
 from kaken_gantt import find_lang, normalize_category, text, PI_ROLE
+from kaken_data import load_researchers
 from kaken_inst import key_from_args, paths
 
 # 「大型科研費」とみなす種目（normalize_category 後の名称）
@@ -115,9 +116,14 @@ def researcher_name(path, erad):
     return ""
 
 
-def analyze(erad, path):
-    """1研究者の行を作る。大型なしの人も返す（large_* は None）。"""
-    projects = pi_projects(path, erad)
+def analyze_researcher(r):
+    """研究者dict {"erad","name","projects"} から行を作る。
+
+    projects は PI 課題（開始年順・declined 除外済み）。入力ソース（研究者JSON /
+    API取得XML）に依らず同じ構造なので、ここは共通ロジック。
+    大型なしの人も返す（large_* は None）。分析対象外なら None。
+    """
+    projects = r["projects"]
     firsts = [p for p in projects if p["category"] not in EXCLUDE_FIRST]
     if not firsts:
         return None                       # PI課題なし（分析対象外）
@@ -129,8 +135,8 @@ def analyze(erad, path):
     before = [p for p in firsts
               if large is None or p["start"] < large["start"]]
     return {
-        "erad": erad,
-        "name": researcher_name(path, erad),
+        "erad": r["erad"],
+        "name": r.get("name", ""),
         "first_year": first["start"],
         "first_category": first["category"],
         "large_year": large["start"] if large else None,
@@ -140,6 +146,15 @@ def analyze(erad, path):
         "categories_before_large": " / ".join(
             f"{p['start']}:{p['category']}" for p in before),
     }
+
+
+def analyze(erad, path):
+    """XMLパス版の薄いラッパ（後方互換）。"""
+    return analyze_researcher({
+        "erad": erad,
+        "name": researcher_name(path, erad),
+        "projects": pi_projects(path, erad),
+    })
 
 
 def draw_histogram(ax, ys):
@@ -187,11 +202,9 @@ def render_histogram(with_large, path):
 def main():
     key, _ = key_from_args(sys.argv[1:])
     p = paths(key)
-    rows = []
-    for path in sorted(p["researchers"].glob("*.xml")):
-        row = analyze(path.stem, path)
-        if row:
-            rows.append(row)
+    researchers, source = load_researchers(key)
+    rows = [row for row in (analyze_researcher(r) for r in researchers) if row]
+    print(f"入力ソース: {source}（研究者 {len(researchers)}人）")
 
     with_large = [r for r in rows if r["large_year"] is not None]
     without = [r for r in rows if r["large_year"] is None]

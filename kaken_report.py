@@ -15,17 +15,18 @@ import sys
 import matplotlib.pyplot as plt
 
 from kaken_gantt import A4_W, A4_H
+from kaken_data import load_researchers
 from kaken_inst import inst_name, key_from_args, paths
-from kaken_stepup import FIRST_YEAR_MIN, analyze, draw_histogram
+from kaken_stepup import FIRST_YEAR_MIN, analyze_researcher, draw_histogram
 
 INK = "#222222"
 SUB = "#555555"
 
 
-def collect(data_dir):
+def collect(researchers):
     """集計を実行してレポートに埋める数値一式を返す。"""
-    n_roster = len(list(data_dir.glob("*.xml")))
-    rows = [r for r in (analyze(p.stem, p) for p in sorted(data_dir.glob("*.xml"))) if r]
+    n_roster = len(researchers)
+    rows = [r for r in (analyze_researcher(x) for x in researchers) if r]
     ys = sorted(r["years_to_large"] for r in rows if r["years_to_large"] is not None)
     from collections import Counter
     counts = Counter(ys)
@@ -56,7 +57,8 @@ def main():
     key, _ = key_from_args(sys.argv[1:])
     name = inst_name(key)
     p = paths(key)
-    s = collect(p["researchers"])
+    researchers, source = load_researchers(key)
+    s = collect(researchers)
     today = datetime.date.today().isoformat()
 
     fig = plt.figure(figsize=(A4_W, A4_H))
@@ -73,10 +75,18 @@ def main():
         "大型科研費（基盤研究(B)以上）を獲得した研究者は、研究代表者として最初に科研費を\n"
         "採択されてから何年で大型種目に到達しているか。")
 
+    if source == "json":
+        method = (
+            f"・母集団: 科研費に参画したことがあり、{name}に一度でも所属した研究者 {s['n_roster']}人\n"
+            f"　（KAKEN「研究者をさがす」で研究機関={name}を検索しJSONを取得）。\n"
+            "・各研究者のJSONに含まれる生涯の全採択課題（全年代・全機関）を用いる。\n")
+    else:
+        method = (
+            f"・母集団: 科研費に参画したことがあり、{name}に一度でも所属した研究者 {s['n_roster']}人\n"
+            f"　（KAKEN の機関検索で{name}の全課題を取得し、研究代表者と所属メンバーを収集）。\n"
+            "・各研究者について KAKEN（NII）OpenSearch API から生涯の全採択課題を取得（全年代）。\n")
     y = section(fig, y, "■ データと方法",
-        f"・母集団: 科研費に参画したことがあり、{name}に一度でも所属した研究者 {s['n_roster']}人\n"
-        f"　（KAKEN の機関検索で{name}の全課題を取得し、研究代表者と所属メンバーを収集）。\n"
-        "・各研究者について KAKEN（NII）OpenSearch API から生涯の全採択課題を取得（全年代）。\n"
+        method +
         f"・分析対象: 研究代表者としての採択があり、最初の採択が {FIRST_YEAR_MIN} 年度以降"
         f"（基盤研究制度の開始年）の {s['n_analyzed']}人。\n"
         "・「最初の科研費」= 研究代表者としての初採択（特別研究員奨励費・採択後辞退は除外）。\n"

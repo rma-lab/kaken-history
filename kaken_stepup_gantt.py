@@ -21,18 +21,19 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
 import kaken_gantt as kg
+from kaken_data import load_researchers
 from kaken_inst import key_from_args, paths
-from kaken_stepup import (EXCLUDE_FIRST, FIRST_YEAR_MIN, is_large,
-                          pi_projects, researcher_name)
+from kaken_stepup import EXCLUDE_FIRST, FIRST_YEAR_MIN, is_large
 
 
-def load_aligned(data_dir):
-    """大型持ちの研究者を、課題年度を相対年に変換して返す（所要年数の短い順）。"""
-    researchers = []
-    for path in sorted(data_dir.glob("*.xml")):
-        erad = path.stem
-        projects = [p for p in pi_projects(path, erad)
-                    if p["category"] not in EXCLUDE_FIRST]
+def load_aligned(researchers_in):
+    """大型持ちの研究者を、課題年度を相対年に変換して返す（所要年数の短い順）。
+
+    入力は kaken_data.load_researchers が返す研究者dictのリスト（JSON/XML両対応）。
+    """
+    aligned = []
+    for r in researchers_in:
+        projects = [p for p in r["projects"] if p["category"] not in EXCLUDE_FIRST]
         if not projects:
             continue
         if FIRST_YEAR_MIN is not None and projects[0]["start"] < FIRST_YEAR_MIN:
@@ -41,24 +42,29 @@ def load_aligned(data_dir):
         if not larges:
             continue
         origin = larges[0]["start"]            # 基準年（大型初採択の開始年度）
-        for p in projects:
-            p["start"] -= origin
-            p["end"] -= origin
-            p["highlight"] = p is larges[0]
-        researchers.append({
-            "erad": erad,
-            "name": researcher_name(path, erad),
-            "projects": projects,
-            "years_to_large": origin - min(p["start"] + origin for p in projects),
+        years_to_large = origin - projects[0]["start"]   # projects は開始年順
+        shifted = []
+        for p in projects:                     # 元を壊さないよう複製して相対年に
+            q = dict(p)
+            q["highlight"] = p is larges[0]
+            q["start"] -= origin
+            q["end"] -= origin
+            shifted.append(q)
+        aligned.append({
+            "erad": r["erad"],
+            "name": r.get("name", ""),
+            "projects": shifted,
+            "years_to_large": years_to_large,
         })
-    researchers.sort(key=lambda r: (r["years_to_large"], r["erad"]))
-    return researchers
+    aligned.sort(key=lambda r: (r["years_to_large"], r["erad"]))
+    return aligned
 
 
 def main():
     key, _ = key_from_args(sys.argv[1:])
     p = paths(key)
-    researchers = load_aligned(p["researchers"])
+    researchers_in, _src = load_researchers(key)
+    researchers = load_aligned(researchers_in)
     year_min, year_max = kg.axis_range(researchers)
     pages = kg.paginate(researchers)
 

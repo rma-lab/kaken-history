@@ -87,6 +87,28 @@ pdftoppm -png -r 80 -f 1 -l 1 output/kaken_gantt.pdf /tmp/page
 .venv/bin/python kaken_report.py fukushima        # A4縦1枚レポート
 ```
 
+## 入力ソース：研究者JSON（推奨・appid不要）と API取得XML（従来）
+
+**入力は `kaken_data.load_researchers(key)` に一元化**され、下流（stepup/gantt/report）は
+ソースを気にしない。優先順位：
+
+1. `data/<key>/researchers.json` … KAKEN「**研究者をさがす**」(nrid.nii.ac.jp) の JSON
+   エクスポート。**appid不要**。人単位で生涯全課題を内包するため、機関検索XMLで欠ける
+   他機関時代の課題も入る（実データ検証済み：JAISTでAPI方式ロスターを完全被覆し、
+   所要年数の集計も一致）。パーサは `kaken_json.py`。1回のエクスポート上限1万件。
+2. `data/<key>/researchers/*.xml` … `kaken_fetch.py` が API で取得した従来方式（appid必要）。
+   JSONが無ければ自動でこちらにフォールバック。
+
+研究者JSONの取り方：「研究者をさがす」で研究機関＝機関名を検索 → Select All → Export in JSON。
+XML↔JSONの対応：PI判定=課題top-levelの`role`に`principal_investigator`、領域代表=`role`に
+`area_organizer`（XMLの`projectType="organizer"`相当）、期間=`since`/`until`の`fiscal:year`、
+種目=`category[0].humanReadableValue(ja)`、状態=`projectStatus/statusCode`、氏名=`name`/ヨミは
+`ja-Kana`。共通の分析ロジックは `kaken_stepup.analyze_researcher(r)`（研究者dictを受ける）。
+
+**Colab配布**: `kaken_colab.ipynb`（他大学URA・研究者向け。ブラウザだけでJSON→PDF、appid不要）。
+Colab(Linux)はMac日本語フォントが無いのでIPAゴシックを導入。Noto CJKは言語指定なしだと
+中国語字形になるため使わない（`kaken_gantt.py` のフォント指定も同方針）。
+
 ## データ取得（kaken_fetch.py）と採択前実績の集計（kaken_stepup.py）
 
 機関単位の検索結果は検索範囲外・他機関時代の課題を含まないため、
