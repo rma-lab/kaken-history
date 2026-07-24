@@ -228,9 +228,14 @@ def render_page(fig, page, year_min, year_max):
             ax.text(p["start"] + 0.1, y, " " + p["category"],
                     ha="left", va="center", color="black", fontsize=6.5,
                     zorder=4, clip_on=False)
-        # 氏名・研究者番号をグラフ左に（このブロックの縦中央）
+        # 氏名・研究者番号をグラフ左に（このブロックの縦中央）。
+        # 相対年ガントでは大型採択までの年数（years_to_large）も添える。
+        label = f"{r['name']}\n{r['erad']}"
+        ytl = r.get("years_to_large")
+        if ytl is not None:
+            label += f"\n{ytl}年"
         ycenter = top - n / 2
-        ax.text(-0.012, ycenter, f"{r['name']}\n{r['erad']}",
+        ax.text(-0.012, ycenter, label,
                 transform=ax.get_yaxis_transform(),
                 ha="right", va="center", fontsize=8, linespacing=1.4)
         # 研究者の区切り線（次のブロックとの間に黒い横線。氏名欄〜右端まで）
