@@ -57,7 +57,9 @@ def section(fig, y, title, body, body_size=8.8):
 
 def main():
     key, _ = key_from_args(sys.argv[1:])
-    name = inst_name(key)
+    # 機関名はタイトル用の任意ラベル（「◯◯大学」でも「東北の国立大学」でも空でも可）。
+    # 母集団は渡された研究者JSONの中身で決まるので、方法の説明はこのラベルに依存させない。
+    label = (inst_name(key) or "").strip() or None
     p = paths(key)
     researchers, source = load_researchers(key)
     s = collect(researchers)
@@ -68,8 +70,9 @@ def main():
     # --- タイトル ---
     fig.text(0.5, 0.955, "大型科研費獲得までの道のり", ha="center",
              fontsize=17, fontweight="bold", color=INK)
-    fig.text(0.5, 0.933, f"— {name}の研究者の科研費採択履歴にみる、最初の採択から大型種目までの年数 —",
-             ha="center", fontsize=10, color=SUB)
+    subtitle = (f"— {label}の研究者の、最初の科研費採択から大型種目までの年数 —"
+                if label else "— 最初の科研費採択から大型種目までの年数 —")
+    fig.text(0.5, 0.933, subtitle, ha="center", fontsize=10, color=SUB)
 
     # --- 本文 ---
     y = 0.895
@@ -79,13 +82,13 @@ def main():
 
     if source == "json":
         method = (
-            f"・母集団: 科研費に参画したことがあり、{name}に一度でも所属した研究者 {s['n_roster']}人\n"
-            f"　（KAKEN「研究者をさがす」で研究機関={name}を検索しJSONを取得）。\n"
-            "・各研究者のJSONに含まれる生涯の全採択課題（全年代・全機関）を用いる。\n")
+            f"・母集団: 分析対象としたJSONに含まれる、科研費に関わった研究者 {s['n_roster']}人\n"
+            "　（KAKEN「研究者をさがす」の検索結果〈JSON〉。各研究者の生涯全課題を含む）。\n"
+            "・各研究者の生涯の全採択課題（全年代・全機関）を用いる。\n")
     else:
         method = (
-            f"・母集団: 科研費に参画したことがあり、{name}に一度でも所属した研究者 {s['n_roster']}人\n"
-            f"　（KAKEN の機関検索で{name}の全課題を取得し、研究代表者と所属メンバーを収集）。\n"
+            f"・母集団: 分析対象に含まれる、科研費に関わった研究者 {s['n_roster']}人\n"
+            "　（KAKEN の機関検索で収集した研究代表者・所属メンバー）。\n"
             "・各研究者について KAKEN（NII）OpenSearch API から生涯の全採択課題を取得（全年代）。\n")
     y = section(fig, y, "■ データと方法",
         method +
@@ -113,7 +116,7 @@ def main():
         f"・大型未獲得の {s['n_no_large']}人はヒストグラムに含まれない。この中には「まだ獲得して\n"
         "　いないだけ」の若手も多く、右打ち切りがある（長い所要年数ほど観測されにくい）。\n"
         "・分担者としての参画は実績に数えていない。不採択・応募行動は KAKEN からは観測できない。\n"
-        f"・{name}という一機関の在籍経験者に限った集計であり、一般化には注意。")
+        "・本集計は分析対象としたJSONの研究者集団に限ったものであり、一般化には注意。")
 
     # --- ヒストグラム（下部）---
     ax = fig.add_axes([0.09, 0.085, 0.85, y - 0.13])
