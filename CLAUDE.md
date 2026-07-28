@@ -83,7 +83,8 @@ pdftoppm -png -r 80 -f 1 -l 1 output/kaken_gantt.pdf /tmp/page
 .venv/bin/python kaken_roster.py fukushima        # 機関の全課題→母集団リスト
 .venv/bin/python kaken_fetch.py fukushima         # 研究者ごとの生涯全課題を取得
 .venv/bin/python kaken_stepup.py fukushima        # 所要年数の集計+ヒストグラム
-.venv/bin/python kaken_stepup_gantt.py fukushima  # 相対年アラインのガント
+.venv/bin/python kaken_stepup_gantt.py fukushima  # 大型あり群：相対年アラインのガント
+.venv/bin/python kaken_nolarge_gantt.py fukushima # 大型なし群：翌年度アラインのガント
 .venv/bin/python kaken_report.py fukushima        # A4縦1枚レポート
 ```
 
@@ -158,6 +159,13 @@ Colab(Linux)はMac日本語フォントが無いのでIPAゴシックを導入�
 - `kaken_stepup_gantt.py`: 大型初採択の開始年度を**相対年0**にアラインしたガントチャート
   → `output/kaken_stepup_gantt.pdf`（大型あり95人、所要年数の短い順）。0に縦破線、
   大型初採択の課題は黒枠（`highlight`）。表示条件は kaken_stepup.py の集計と同一。
+  氏名の下に所要年数（`year_label`）を添える。
+- `kaken_nolarge_gantt.py`: **大型なし群**のガント → `output/kaken_nolarge_gantt_<key>.pdf`。
+  揃える基準が無いので「次に新しい課題が始まる年度」（`next_fiscal_year()`＝翌年度、
+  今日の日付から算出）を**相対年0**に置く。氏名の下に「経過N年」（最初の科研費→基準年）を
+  添え、大型到達者の所要年数（中央値）と比較できるようにする。経過年の長い順。表示条件は
+  kaken_stepup.py の集計と同一（PIのみ・特別研究員奨励費/declined除外・FIRST_YEAR_MIN以降）。
+  ※相対年ガントの左ラベルの年数表記は `kaken_gantt.render_page` が `year_label` を見る共通実装。
 
 ## 今後の計画（ロードマップ）
 

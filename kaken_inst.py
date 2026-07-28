@@ -35,6 +35,7 @@ def paths(key):
         "csv": root / "stepup.csv",
         "hist": out / f"kaken_stepup_hist_{key}.pdf",
         "gantt": out / f"kaken_stepup_gantt_{key}.pdf",
+        "gantt_nolarge": out / f"kaken_nolarge_gantt_{key}.pdf",
         "report": out / f"kaken_report_{key}.pdf",
     }
 

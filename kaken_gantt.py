@@ -229,11 +229,11 @@ def render_page(fig, page, year_min, year_max):
                     ha="left", va="center", color="black", fontsize=6.5,
                     zorder=4, clip_on=False)
         # 氏名・研究者番号をグラフ左に（このブロックの縦中央）。
-        # 相対年ガントでは大型採択までの年数（years_to_large）も添える。
+        # 相対年ガントでは年数の注記（year_label、例「8年」「経過7年」）も添える。
         label = f"{r['name']}\n{r['erad']}"
-        ytl = r.get("years_to_large")
-        if ytl is not None:
-            label += f"\n{ytl}年"
+        year_label = r.get("year_label")
+        if year_label:
+            label += f"\n{year_label}"
         ycenter = top - n / 2
         ax.text(-0.012, ycenter, label,
                 transform=ax.get_yaxis_transform(),

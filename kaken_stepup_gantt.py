@@ -55,6 +55,7 @@ def load_aligned(researchers_in):
             "name": r.get("name", ""),
             "projects": shifted,
             "years_to_large": years_to_large,
+            "year_label": f"{years_to_large}年",
         })
     aligned.sort(key=lambda r: (r["years_to_large"], r["erad"]))
     return aligned
