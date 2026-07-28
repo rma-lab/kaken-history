@@ -106,7 +106,7 @@ XML↔JSONの対応：PI判定=課題top-levelの`role`に`principal_investigato
 種目=`category[0].humanReadableValue(ja)`、状態=`projectStatus/statusCode`、氏名=`name`/ヨミは
 `ja-Kana`。共通の分析ロジックは `kaken_stepup.analyze_researcher(r)`（研究者dictを受ける）。
 
-**Colab配布**: `kaken_colab.ipynb`（他大学URA・研究者向け。ブラウザだけでJSON→PDF、appid不要）。
+**Colab配布**: `kaken-history.ipynb`（他大学URA・研究者向け。ブラウザだけでJSON→PDF、appid不要）。
 Colab(Linux)はMac日本語フォントが無いのでIPAゴシックを導入。Noto CJKは言語指定なしだと
 中国語字形になるため使わない（`kaken_gantt.py` のフォント指定も同方針）。
 
