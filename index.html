@@ -5,100 +5,143 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>KAKEN 大型科研費までの道のり</title>
 <meta name="description" content="KAKEN研究者JSONから、最初の科研費→大型科研費までの年数を集計しPDFレポートを生成。データはブラウザ内だけで処理されます。">
+<meta name="theme-color" content="#1f4e8c">
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="%231f4e8c"/><rect x="12" y="14" width="28" height="8" rx="2" fill="%23ffffff"/><rect x="20" y="28" width="32" height="8" rx="2" fill="%23a9c0da"/><rect x="12" y="42" width="20" height="8" rx="2" fill="%231e8f5a"/></svg>'>
 <style>
+  /* 配色: 基調=瑠璃紺 / 差し色=若竹（完了・ダウンロードのみ） */
   :root {
-    --bg: #ffffff; --fg: #1a202c; --muted: #64748b; --line: #e2e8f0;
-    --accent: #1d4ed8; --accent-fg: #ffffff; --panel: #f8fafc; --ok: #15803d;
+    --ground: #f4f6f8; --paper: #ffffff; --ink: #20272f; --mut: #5b6470;
+    --line: #dde3ea; --field: #fbfcfd;
+    --acc: #1f4e8c; --acc-ink: #16406f; --soft: #e7eef7;
+    --dropbg: #eef4fa; --dropline: #a9c0da;
+    --pop: #1e8f5a; --pop-ink: #177347;
+    --err: #b3372e;
+    --shadow: 0 1px 2px rgba(32,39,47,.04), 0 8px 24px rgba(32,39,47,.05);
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #0f172a; --fg: #e2e8f0; --muted: #94a3b8; --line: #334155;
-      --accent: #3b82f6; --accent-fg: #ffffff; --panel: #1e293b; --ok: #4ade80;
+      --ground: #151a21; --paper: #1d242e; --ink: #e3e7ec; --mut: #97a0ab;
+      --line: #333d4a; --field: #171e26;
+      --acc: #7da7dd; --acc-ink: #a4c3ea; --soft: #24344a;
+      --dropbg: #1c2836; --dropline: #3f5674;
+      --pop: #2c9e6a; --pop-ink: #58c08d;
+      --err: #e07c74;
+      --shadow: 0 1px 2px rgba(0,0,0,.25), 0 8px 24px rgba(0,0,0,.25);
     }
   }
   * { box-sizing: border-box; }
   body {
-    margin: 0; background: var(--bg); color: var(--fg);
+    margin: 0; background: var(--ground); color: var(--ink);
     font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", system-ui, sans-serif;
-    line-height: 1.7;
+    line-height: 1.8;
   }
-  main { max-width: 720px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
-  h1 { font-size: 1.5rem; margin: 0 0 .25rem; }
-  .lead { color: var(--muted); margin: 0 0 1.5rem; font-size: .95rem; }
-  ol.steps { padding-left: 1.4rem; margin: 0 0 1.5rem; }
-  ol.steps li { margin-bottom: .4rem; }
-  .field { margin-bottom: 1rem; }
-  .field label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: .3rem; }
+  .top {
+    max-width: 660px; margin: 0 auto; padding: 1.3rem 1.25rem 0;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .mark { font-weight: 800; font-size: 1rem; letter-spacing: .02em; }
+  .mark span { color: var(--acc); }
+  .chip {
+    font-size: .72rem; color: var(--mut); border: 1px solid var(--line);
+    border-radius: 999px; padding: .15rem .7rem; text-decoration: none;
+  }
+  main { max-width: 660px; margin: 0 auto; padding: 2rem 1.25rem 3rem; }
+  h1 {
+    font-size: 1.7rem; margin: 0 0 .4rem; font-weight: 800;
+    letter-spacing: -.01em; text-wrap: balance;
+  }
+  .desc { color: var(--mut); font-size: .95rem; margin: 0 0 1.8rem; }
+  .card {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: var(--shadow); padding: 1.6rem 1.6rem 1.8rem; margin-bottom: 1.1rem;
+  }
+  .step { display: flex; gap: .9rem; margin-bottom: .9rem; font-size: .93rem; }
+  .step:last-child { margin-bottom: 0; }
+  .n {
+    flex: none; width: 1.55rem; height: 1.55rem; border-radius: 999px;
+    background: var(--soft); color: var(--acc); font-weight: 700; font-size: .85rem;
+    display: flex; align-items: center; justify-content: center; margin-top: .2rem;
+  }
+  a { color: var(--acc); }
+  :focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+  .field label { display: block; font-size: .82rem; color: var(--mut); margin-bottom: .35rem; }
   .field input[type=text] {
-    width: 100%; padding: .55rem .7rem; font-size: 1rem; border-radius: 6px;
-    border: 1px solid var(--line); background: var(--bg); color: var(--fg);
+    width: 100%; border: 1px solid var(--line); border-radius: 8px;
+    padding: .6rem .8rem; font-size: 1rem; background: var(--field); color: var(--ink);
   }
   #drop {
-    border: 2px dashed var(--line); border-radius: 10px; padding: 2rem 1rem;
-    text-align: center; cursor: pointer; transition: border-color .15s, background .15s;
-    margin-bottom: 1rem;
+    border: 2px dashed var(--dropline); border-radius: 12px; background: var(--dropbg);
+    text-align: center; padding: 2.4rem 1rem; margin-top: 1.1rem; cursor: pointer;
+    transition: border-color .15s, background .15s;
   }
-  #drop.hover { border-color: var(--accent); background: var(--panel); }
-  #drop .big { font-size: 1.05rem; margin-bottom: .25rem; }
-  #drop .sub { color: var(--muted); font-size: .85rem; }
+  @media (prefers-reduced-motion: reduce) { #drop { transition: none; } }
+  #drop.hover, #drop:hover { border-color: var(--acc); }
+  #drop .big { font-size: 1.02rem; font-weight: 700; color: var(--acc-ink); }
+  #drop .sub { font-size: .82rem; color: var(--mut); margin-top: .25rem; }
   #file { display: none; }
-  #status { font-size: .95rem; margin: 1rem 0 .5rem; min-height: 1.5em; }
-  #status.error { color: #dc2626; white-space: pre-wrap; }
+  #status { font-size: .92rem; color: var(--mut); margin: 1.2rem 0 0; min-height: 1.5em; }
+  #status.ok { color: var(--pop-ink); font-weight: 700; }
+  #status.error { color: var(--err); white-space: pre-wrap; }
   #log {
-    background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
-    padding: .75rem 1rem; font-family: ui-monospace, "SF Mono", Menlo, monospace;
-    font-size: .78rem; white-space: pre-wrap; max-height: 16rem; overflow-y: auto;
-    display: none;
+    background: var(--field); border: 1px solid var(--line); border-radius: 8px;
+    padding: .7rem .9rem; font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: .76rem; white-space: pre-wrap; max-height: 13rem; overflow-y: auto;
+    margin-top: .8rem; display: none; color: var(--mut);
   }
-  #results { display: none; margin-top: 1.5rem; }
-  #results h2 { font-size: 1.1rem; margin-bottom: .75rem; }
+  #results { display: none; margin-top: 1rem; }
   #dl-zip a {
-    display: block; text-align: center; background: var(--accent); color: var(--accent-fg);
-    text-decoration: none; padding: .8rem 1rem; border-radius: 8px; font-size: 1.05rem;
-    font-weight: 600; margin-bottom: 1rem;
+    display: block; text-align: center; background: var(--pop); color: #fff;
+    text-decoration: none; padding: .9rem; border-radius: 10px;
+    font-weight: 700; font-size: 1.05rem;
   }
-  #zip-contents { padding-left: 1.4rem; margin: 0; }
-  #zip-contents li { font-size: .9rem; margin-bottom: .3rem; }
-  #zip-contents .desc { color: var(--muted); font-size: .8rem; }
+  #zip-contents { padding-left: 1.4rem; margin: .9rem 0 0; }
+  #zip-contents li { font-size: .86rem; margin-bottom: .25rem; }
+  #zip-contents .desc2 { color: var(--mut); font-size: .78rem; }
+  details { margin: 1.6rem 0; }
+  summary { cursor: pointer; font-size: .9rem; color: var(--mut); }
+  details p { font-size: .9rem; color: var(--mut); }
+  details strong { color: var(--ink); }
   footer {
-    margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--line);
-    font-size: .8rem; color: var(--muted);
+    max-width: 660px; margin: 0 auto; padding: 0 1.25rem 2.5rem;
+    font-size: .76rem; color: var(--mut);
   }
   footer a { color: inherit; }
-  details { margin-bottom: 1.5rem; }
-  summary { cursor: pointer; font-size: .9rem; color: var(--muted); }
-  details p { font-size: .9rem; }
 </style>
 </head>
 <body>
+<div class="top">
+  <div class="mark">kaken-<span>history</span></div>
+  <a class="chip" href="https://github.com/rma-lab/kaken-history" target="_blank" rel="noopener">rma-lab</a>
+</div>
 <main>
-  <h1>KAKEN 大型科研費までの道のり</h1>
-  <p class="lead">所属機関の研究者が、最初の科研費から大型科研費（基盤研究(B)以上）に到達するまでの年数を集計し、レポート・ヒストグラム・ガントチャートのPDFを作ります。</p>
+  <h1>大型科研費までの道のりを、1つのJSONから。</h1>
+  <p class="desc">所属機関の研究者が、最初の科研費から大型科研費（基盤研究(B)以上）に到達するまでの年数を集計し、レポート・ヒストグラム・ガントチャートのPDFを作ります。</p>
 
-  <ol class="steps">
-    <li><a href="https://nrid.nii.ac.jp/ja/" target="_blank" rel="noopener">KAKEN 研究者をさがす</a> を開き、詳細検索の<b>研究機関</b>に調べたい大学・機関名を入れて検索</li>
-    <li>検索結果画面で <b>Select All → Export in JSON</b> を実行してJSONを保存（1回1万件まで）</li>
-    <li>保存したJSONファイルを下の枠にドロップ → PDFをダウンロード</li>
-  </ol>
-
-  <div class="field">
-    <label for="label">レポートのタイトルに入れる機関名（任意・空欄OK）</label>
-    <input type="text" id="label" placeholder="例: 福島大学">
+  <div class="card">
+    <div class="step"><div class="n">1</div><div><a href="https://nrid.nii.ac.jp/ja/" target="_blank" rel="noopener">KAKEN 研究者をさがす</a> の詳細検索で、<b>研究機関</b>に調べたい大学・機関名を入れて検索</div></div>
+    <div class="step"><div class="n">2</div><div><b>Select All → Export in JSON</b> を実行してJSONを保存（1回1万件まで）</div></div>
+    <div class="step"><div class="n">3</div><div>保存したJSONを下の枠にドロップすると、その場でPDFができあがります</div></div>
   </div>
 
-  <div id="drop">
-    <div class="big">ここに researchers.json をドロップ</div>
-    <div class="sub">またはクリックしてファイルを選択</div>
-  </div>
-  <input type="file" id="file" accept=".json,application/json">
+  <div class="card">
+    <div class="field">
+      <label for="label">レポートのタイトルに入れる機関名（任意・空欄OK）</label>
+      <input type="text" id="label" placeholder="例: 福島大学">
+    </div>
 
-  <div id="status">準備中…</div>
-  <div id="log"></div>
+    <div id="drop">
+      <div class="big">ここに researchers.json をドロップ</div>
+      <div class="sub">またはクリックしてファイルを選択</div>
+    </div>
+    <input type="file" id="file" accept=".json,application/json">
 
-  <div id="results">
-    <h2>生成されたPDF</h2>
-    <div id="dl-zip"></div>
-    <ul id="zip-contents"></ul>
+    <div id="status">準備中…</div>
+    <div id="log"></div>
+
+    <div id="results">
+      <div id="dl-zip"></div>
+      <ul id="zip-contents"></ul>
+    </div>
   </div>
 
   <details>
@@ -111,13 +154,13 @@
     大きなJSON（100MB級）の処理には1〜2分・メモリ1GB程度を使うため、PCでの利用を推奨します。
     ガントチャートには研究者の氏名が含まれます。取り扱いにはご配慮ください。</p>
   </details>
-
-  <footer>
-    データ: <a href="https://kaken.nii.ac.jp/" target="_blank" rel="noopener">科学研究費助成事業データベース KAKEN</a>（国立情報学研究所） /
-    コード: <a href="https://github.com/rma-lab/kaken-history" target="_blank" rel="noopener">rma-lab/kaken-history</a> (MIT) /
-    フォント: <a href="web/fonts/IPA_Font_License_Agreement_v1.0.txt">IPAゴシック</a>
-  </footer>
 </main>
+
+<footer>
+  データ: <a href="https://kaken.nii.ac.jp/" target="_blank" rel="noopener">科学研究費助成事業データベース KAKEN</a>（国立情報学研究所） /
+  コード: <a href="https://github.com/rma-lab/kaken-history" target="_blank" rel="noopener">rma-lab/kaken-history</a> (MIT) /
+  フォント: <a href="web/fonts/IPA_Font_License_Agreement_v1.0.txt">IPAゴシック</a>
+</footer>
 
 <script>
 (function () {
@@ -136,9 +179,9 @@
   const worker = new Worker("web/worker.js", { type: "module" });
   worker.postMessage({ type: "init", base: location.href });
 
-  function setStatus(msg, isError) {
+  function setStatus(msg, kind) {
     statusEl.textContent = msg;
-    statusEl.className = isError ? "error" : "";
+    statusEl.className = kind || "";
   }
   function appendLog(msg) {
     logEl.style.display = "block";
@@ -156,22 +199,22 @@
       else setStatus("準備完了。JSONファイルをドロップしてください。");
     } else if (d.type === "done") {
       running = false;
-      setStatus("完了しました。");
+      setStatus("✓ 完了しました。", "ok");
       showResults(d.names, d.zip);
     } else if (d.type === "error") {
       running = false;
-      setStatus("エラーが発生しました:\n" + d.msg + "\n（ページを再読み込みして再試行してください）", true);
+      setStatus("エラーが発生しました:\n" + d.msg + "\n（ページを再読み込みして再試行してください）", "error");
     }
   };
   worker.onerror = (e) => {
     running = false;
-    setStatus("エラーが発生しました: " + e.message, true);
+    setStatus("エラーが発生しました: " + e.message, "error");
   };
 
   function runFile(file) {
     if (running) return;
     if (!/\.json$/i.test(file.name)) {
-      setStatus("JSONファイル（.json）を選択してください: " + file.name, true);
+      setStatus("JSONファイル（.json）を選択してください: " + file.name, "error");
       return;
     }
     $("results").style.display = "none";
@@ -189,7 +232,7 @@
         [reader.result]
       );
     };
-    reader.onerror = () => { running = false; setStatus("ファイルの読み込みに失敗しました。", true); };
+    reader.onerror = () => { running = false; setStatus("ファイルの読み込みに失敗しました。", "error"); };
     reader.readAsArrayBuffer(file);
   }
 
@@ -209,7 +252,7 @@
     for (const name of names) {
       const [title, desc] = PDF_INFO[name] || [name, ""];
       const li = document.createElement("li");
-      li.innerHTML = title + ' <span class="desc">— ' + desc + "</span>";
+      li.innerHTML = title + ' <span class="desc2">— ' + desc + "</span>";
       list.appendChild(li);
     }
     $("results").style.display = "block";
