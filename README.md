@@ -25,6 +25,12 @@
 集計し、レポート・ヒストグラム・相対年ガントのPDFを作ります。**KAKEN の appid や API は不要**。
 KAKEN「**研究者をさがす**」からダウンロードした JSON（人単位で生涯全課題を含む）を読み込むだけ。
 
+### Web版で使う（インストール不要・データは端末の外に出ない）
+
+**<https://rma-lab.github.io/kaken-history/>** を開き、研究者JSONをドロップするだけ。
+処理はすべてブラウザ内（[Pyodide](https://pyodide.org/)）で完結し、JSONはどこにも送信されません。
+実装は `index.html` と `web/`（分析コードは Colab/ローカルと共通の `.py` をそのまま実行）。
+
 ### Colab で使う（インストール不要・ブラウザだけ）
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rma-lab/kaken-history/blob/main/kaken-history.ipynb)
