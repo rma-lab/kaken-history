@@ -30,7 +30,7 @@ def fetch_all(appid, name):
     while total is None or st <= total:
         params = {"appid": appid, "format": "xml", "qe": name, "rw": RW, "st": st}
         url = API + "?" + urllib.parse.urlencode(params)
-        req = urllib.request.Request(url, headers={"User-Agent": "kaken-summary/0.1"})
+        req = urllib.request.Request(url, headers={"User-Agent": "kaken-history/0.1"})
         with urllib.request.urlopen(req, timeout=120) as resp:
             root = ET.fromstring(resp.read())
         if total is None:

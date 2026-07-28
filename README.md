@@ -1,4 +1,4 @@
-# kaken-summary
+# kaken-history
 
 科研費データベース（[KAKEN](https://kaken.nii.ac.jp/)）からダウンロードした XML を読み込み、
 **研究代表者ごとの科研費取得履歴をガントチャート風にまとめた PDF** を生成するツールです。
@@ -27,7 +27,7 @@ KAKEN「**研究者をさがす**」からダウンロードした JSON（人単
 
 ### Colab で使う（インストール不要・ブラウザだけ）
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/takayuki1997/kaken-summary/blob/main/kaken_colab.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/takayuki1997/kaken-history/blob/main/kaken_colab.ipynb)
 
 1. 上のバッジから Colab を開く
 2. [KAKEN 研究者をさがす](https://nrid.nii.ac.jp/ja/) で **研究機関＝自機関** を検索 →

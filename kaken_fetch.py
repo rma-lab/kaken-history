@@ -40,7 +40,7 @@ def fetch_page(appid, erad, st):
     """1ページぶん取得して (grantAward要素のリスト, 生バイト列) を返す。"""
     params = {"appid": appid, "format": "xml", "qm": erad, "rw": RW, "st": st}
     url = API + "?" + urllib.parse.urlencode(params)
-    req = urllib.request.Request(url, headers={"User-Agent": "kaken-summary/0.1"})
+    req = urllib.request.Request(url, headers={"User-Agent": "kaken-history/0.1"})
     with urllib.request.urlopen(req, timeout=60) as resp:
         raw = resp.read()
     root = ET.fromstring(raw)
