@@ -250,7 +250,11 @@
     zipBox.innerHTML = "";
     const za = document.createElement("a");
     za.href = URL.createObjectURL(new Blob([zip.buffer], { type: "application/zip" }));
-    za.download = zip.name;
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    const stamp = d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) +
+                  pad(d.getHours()) + pad(d.getMinutes());
+    za.download = zip.name.replace(/\.zip$/, "_" + stamp + ".zip");
     za.textContent = "ダウンロード";
     zipBox.appendChild(za);
 
