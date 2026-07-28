@@ -34,7 +34,9 @@ KAKEN「**研究者をさがす**」からダウンロードした JSON（人単
    結果画面で **Select All → Export in JSON**（1回1万件まで。超える大規模機関は分割）
 3. Colab のセルを上から実行し、JSON をアップロード → 機関名を入力 → PDF をダウンロード
 
-アップロードした JSON は Colab セッション上でのみ処理され、閉じれば消えます（外部保存はしません）。
+アップロードした JSON は Colab セッション（Google のクラウド上の一時環境）で処理されます。
+任意で Google ドライブをマウントした場合は、再アップロード回避のためあなた自身のドライブに
+コピーが保存されます（マウントしなければ外部保存はされません）。
 
 ### ローカル（venv）で使う
 
@@ -42,7 +44,8 @@ KAKEN「**研究者をさがす**」からダウンロードした JSON（人単
 # data/<機関キー>/researchers.json に研究者JSONを置く
 .venv/bin/python kaken_stepup.py       <機関キー>   # 所要年数の集計＋ヒストグラム
 .venv/bin/python kaken_report.py       <機関キー>   # A4縦1枚レポート
-.venv/bin/python kaken_stepup_gantt.py <機関キー>   # 相対年アラインのガント
+.venv/bin/python kaken_stepup_gantt.py <機関キー>   # 大型あり群: 相対年アラインのガント
+.venv/bin/python kaken_nolarge_gantt.py <機関キー>  # 大型なし群: 翌年度アラインのガント
 ```
 
 機関キーは `kaken_inst.py` の `INSTITUTIONS` に「キー→正式名称」を1行足して登録します。
