@@ -1,7 +1,8 @@
 // KAKEN 大型科研費までの道のり Web版 — Pyodide を動かす Web Worker。
 // すべてブラウザ内で完結し、アップロードされた JSON は外部に送信されない。
+// Pyodide v314系はESモジュールなので module worker（importScripts不可）。
 
-const PYODIDE_URL = "https://cdn.jsdelivr.net/pyodide/v314.0.3/full/pyodide.js";
+import { loadPyodide } from "https://cdn.jsdelivr.net/pyodide/v314.0.3/full/pyodide.mjs";
 
 // リポジトリ直下の分析コード（Colab/ローカルと共通のもの）
 const PY_FILES = [
@@ -28,7 +29,6 @@ async function fetchBytes(path, base) {
 
 async function init(base) {
   status("Python 実行環境を読み込み中…（初回のみ約30MB、2回目以降はキャッシュ）");
-  importScripts(PYODIDE_URL);
   const py = await loadPyodide({
     stdout: (s) => log(s),
     stderr: (s) => log(s),
