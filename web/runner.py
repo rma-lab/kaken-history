@@ -27,3 +27,17 @@ def run(label):
 
     import glob
     return sorted(glob.glob("output/*_target.pdf"))
+
+
+def make_zip(label):
+    """4つのPDFを（機関名でリネームして）1つのzipにまとめ、そのパスを返す。"""
+    import glob
+    import re
+    import zipfile
+    suffix = re.sub(r'[\\/:*?"<>|\s]+', "_", label) if label else "target"
+    path = f"output/kaken_history_{suffix}.zip"
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
+        for p in sorted(glob.glob("output/*_target.pdf")):
+            arc = os.path.basename(p).replace("_target.pdf", f"_{suffix}.pdf")
+            z.write(p, arc)
+    return path

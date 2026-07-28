@@ -72,7 +72,10 @@ onmessage = async (e) => {
         const bytes = py.FS.readFile("/home/pyodide/" + path);
         return { name: path.split("/").pop(), buffer: bytes.buffer };
       });
-      postMessage({ type: "done", pdfs }, pdfs.map((p) => p.buffer));
+      const zipPath = await py.runPythonAsync("web_runner.make_zip(_label)");
+      const zipBytes = py.FS.readFile("/home/pyodide/" + zipPath);
+      const zip = { name: zipPath.split("/").pop(), buffer: zipBytes.buffer };
+      postMessage({ type: "done", pdfs, zip }, [...pdfs.map((p) => p.buffer), zip.buffer]);
     }
   } catch (err) {
     postMessage({ type: "error", msg: String((err && err.message) || err) });

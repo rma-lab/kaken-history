@@ -68,6 +68,12 @@
     background: var(--accent); color: var(--accent-fg); text-decoration: none;
     padding: .45rem .9rem; border-radius: 6px; font-size: .9rem; white-space: nowrap;
   }
+  #dl-zip a {
+    display: block; text-align: center; background: var(--accent); color: var(--accent-fg);
+    text-decoration: none; padding: .8rem 1rem; border-radius: 8px; font-size: 1.05rem;
+    font-weight: 600; margin-bottom: 1rem;
+  }
+  #dl-list .dl a { background: var(--panel); color: var(--fg); border: 1px solid var(--line); }
   footer {
     margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--line);
     font-size: .8rem; color: var(--muted);
@@ -110,6 +116,7 @@
 
   <div id="results">
     <h2>生成されたPDF</h2>
+    <div id="dl-zip"></div>
     <div id="dl-list"></div>
   </div>
 
@@ -137,8 +144,8 @@
   const PDF_INFO = {
     "kaken_report_target.pdf":        ["A4縦1枚レポート", "問い・方法・結果・ヒストグラム（氏名なし）"],
     "kaken_stepup_hist_target.pdf":   ["所要年数ヒストグラム", "氏名なし・配布しやすい"],
-    "kaken_stepup_gantt_target.pdf":  ["大型あり群のガント", "大型初採択年でアライン（氏名あり）"],
-    "kaken_nolarge_gantt_target.pdf": ["大型なし群のガント", "経過年の長い順（氏名あり）"],
+    "kaken_stepup_gantt_target.pdf":  ["大型あり群のガントチャート", "大型初採択年でアライン（氏名あり）"],
+    "kaken_nolarge_gantt_target.pdf": ["大型なし群のガントチャート", "経過年の長い順（氏名あり）"],
   };
 
   let workerReady = false, running = false, pendingFile = null;
@@ -167,7 +174,7 @@
     } else if (d.type === "done") {
       running = false;
       setStatus("完了！下のボタンからPDFをダウンロードできます。");
-      showResults(d.pdfs);
+      showResults(d.pdfs, d.zip);
     } else if (d.type === "error") {
       running = false;
       setStatus("エラーが発生しました:\n" + d.msg + "\n（ページを再読み込みして再試行してください）", true);
@@ -203,11 +210,20 @@
     reader.readAsArrayBuffer(file);
   }
 
-  function showResults(pdfs) {
+  function showResults(pdfs, zip) {
     const list = $("dl-list");
     list.innerHTML = "";
     const label = $("label").value.trim();
     const suffix = label ? label.replace(/[\\\/:*?"<>|\s]+/g, "_") : "target";
+    const zipBox = $("dl-zip");
+    zipBox.innerHTML = "";
+    if (zip) {
+      const za = document.createElement("a");
+      za.href = URL.createObjectURL(new Blob([zip.buffer], { type: "application/zip" }));
+      za.download = zip.name;
+      za.textContent = "4つまとめてダウンロード（ZIP）";
+      zipBox.appendChild(za);
+    }
     const order = Object.keys(PDF_INFO);
     pdfs.sort((a, b) => order.indexOf(a.name) - order.indexOf(b.name));
     for (const p of pdfs) {

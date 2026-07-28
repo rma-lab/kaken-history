@@ -22,7 +22,7 @@
 ## 大型科研費までの道のり分析（他機関でも使える・appid不要）
 
 所属機関の研究者が「最初の科研費 → 大型科研費（基盤研究(B)以上）」に何年で到達したかを
-集計し、レポート・ヒストグラム・相対年ガントのPDFを作ります。**KAKEN の appid や API は不要**。
+集計し、レポート・ヒストグラム・相対年ガントチャートのPDFを作ります。**KAKEN の appid や API は不要**。
 KAKEN「**研究者をさがす**」からダウンロードした JSON（人単位で生涯全課題を含む）を読み込むだけ。
 
 ### Web版で使う（インストール不要・データは端末の外に出ない）
@@ -50,8 +50,8 @@ KAKEN「**研究者をさがす**」からダウンロードした JSON（人単
 # data/<機関キー>/researchers.json に研究者JSONを置く
 .venv/bin/python kaken_stepup.py       <機関キー>   # 所要年数の集計＋ヒストグラム
 .venv/bin/python kaken_report.py       <機関キー>   # A4縦1枚レポート
-.venv/bin/python kaken_stepup_gantt.py <機関キー>   # 大型あり群: 相対年アラインのガント
-.venv/bin/python kaken_nolarge_gantt.py <機関キー>  # 大型なし群: 翌年度アラインのガント
+.venv/bin/python kaken_stepup_gantt.py <機関キー>   # 大型あり群: 相対年アラインのガントチャート
+.venv/bin/python kaken_nolarge_gantt.py <機関キー>  # 大型なし群: 翌年度アラインのガントチャート
 ```
 
 機関キーは `kaken_inst.py` の `INSTITUTIONS` に「キー→正式名称」を1行足して登録します。
