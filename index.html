@@ -57,23 +57,14 @@
   }
   #results { display: none; margin-top: 1.5rem; }
   #results h2 { font-size: 1.1rem; margin-bottom: .75rem; }
-  .dl {
-    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-    border: 1px solid var(--line); border-radius: 8px; padding: .7rem 1rem;
-    margin-bottom: .6rem;
-  }
-  .dl .name { font-size: .95rem; }
-  .dl .desc { font-size: .8rem; color: var(--muted); }
-  .dl a {
-    background: var(--accent); color: var(--accent-fg); text-decoration: none;
-    padding: .45rem .9rem; border-radius: 6px; font-size: .9rem; white-space: nowrap;
-  }
   #dl-zip a {
     display: block; text-align: center; background: var(--accent); color: var(--accent-fg);
     text-decoration: none; padding: .8rem 1rem; border-radius: 8px; font-size: 1.05rem;
     font-weight: 600; margin-bottom: 1rem;
   }
-  #dl-list .dl a { background: var(--panel); color: var(--fg); border: 1px solid var(--line); }
+  #zip-contents { padding-left: 1.4rem; margin: 0; }
+  #zip-contents li { font-size: .9rem; margin-bottom: .3rem; }
+  #zip-contents .desc { color: var(--muted); font-size: .8rem; }
   footer {
     margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--line);
     font-size: .8rem; color: var(--muted);
@@ -117,7 +108,7 @@
   <div id="results">
     <h2>生成されたPDF</h2>
     <div id="dl-zip"></div>
-    <div id="dl-list"></div>
+    <ul id="zip-contents"></ul>
   </div>
 
   <details>
@@ -173,8 +164,8 @@
       else setStatus("準備完了。JSONファイルをドロップしてください。");
     } else if (d.type === "done") {
       running = false;
-      setStatus("完了！下のボタンからPDFをダウンロードできます。");
-      showResults(d.pdfs, d.zip);
+      setStatus("完了！下のボタンから4つのPDFをまとめてダウンロードできます。");
+      showResults(d.names, d.zip);
     } else if (d.type === "error") {
       running = false;
       setStatus("エラーが発生しました:\n" + d.msg + "\n（ページを再読み込みして再試行してください）", true);
@@ -210,35 +201,24 @@
     reader.readAsArrayBuffer(file);
   }
 
-  function showResults(pdfs, zip) {
-    const list = $("dl-list");
-    list.innerHTML = "";
-    const label = $("label").value.trim();
-    const suffix = label ? label.replace(/[\\\/:*?"<>|\s]+/g, "_") : "target";
+  function showResults(names, zip) {
     const zipBox = $("dl-zip");
     zipBox.innerHTML = "";
-    if (zip) {
-      const za = document.createElement("a");
-      za.href = URL.createObjectURL(new Blob([zip.buffer], { type: "application/zip" }));
-      za.download = zip.name;
-      za.textContent = "4つまとめてダウンロード（ZIP）";
-      zipBox.appendChild(za);
-    }
+    const za = document.createElement("a");
+    za.href = URL.createObjectURL(new Blob([zip.buffer], { type: "application/zip" }));
+    za.download = zip.name;
+    za.textContent = "4つまとめてダウンロード（ZIP）";
+    zipBox.appendChild(za);
+
+    const list = $("zip-contents");
+    list.innerHTML = "";
     const order = Object.keys(PDF_INFO);
-    pdfs.sort((a, b) => order.indexOf(a.name) - order.indexOf(b.name));
-    for (const p of pdfs) {
-      const [title, desc] = PDF_INFO[p.name] || [p.name, ""];
-      const url = URL.createObjectURL(new Blob([p.buffer], { type: "application/pdf" }));
-      const row = document.createElement("div");
-      row.className = "dl";
-      const info = document.createElement("div");
-      info.innerHTML = '<div class="name">' + title + '</div><div class="desc">' + desc + "</div>";
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = p.name.replace("_target.pdf", "_" + suffix + ".pdf");
-      a.textContent = "ダウンロード";
-      row.appendChild(info); row.appendChild(a);
-      list.appendChild(row);
+    names.sort((a, b) => order.indexOf(a) - order.indexOf(b));
+    for (const name of names) {
+      const [title, desc] = PDF_INFO[name] || [name, ""];
+      const li = document.createElement("li");
+      li.innerHTML = title + ' <span class="desc">— ' + desc + "</span>";
+      list.appendChild(li);
     }
     $("results").style.display = "block";
   }
