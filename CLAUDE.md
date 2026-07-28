@@ -100,7 +100,10 @@ pdftoppm -png -r 80 -f 1 -l 1 output/kaken_gantt.pdf /tmp/page
 2. `data/<key>/researchers/*.xml` … `kaken_fetch.py` が API で取得した従来方式（appid必要）。
    JSONが無ければ自動でこちらにフォールバック。
 
-研究者JSONの取り方：「研究者をさがす」で研究機関＝機関名を検索 → Select All → Export in JSON。
+研究者JSONの取り方：「研究者をさがす」詳細検索で**研究者情報の「所属機関」**＝機関名を検索
+→ Select All → Export in JSON。研究課題情報の「研究機関」欄は使わない（課題ベースの
+マッチになり、所属歴のない他機関の分担者が大量混入。福島大実測: 課題側837人・大型率29%
+→ 所属側528人・19%。所属側の残差「元在籍で分担のみ・PI他機関」は分析対象347人中16人と軽微）。
 XML↔JSONの対応：PI判定=課題top-levelの`role`に`principal_investigator`、領域代表=`role`に
 `area_organizer`（XMLの`projectType="organizer"`相当）、期間=`since`/`until`の`fiscal:year`、
 種目=`category[0].humanReadableValue(ja)`、状態=`projectStatus/statusCode`、氏名=`name`/ヨミは

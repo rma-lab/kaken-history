@@ -124,7 +124,7 @@
   <p class="desc">所属機関の研究者が、最初の科研費から大型科研費（基盤研究(B)以上）に到達するまでの年数を集計し、レポート・ヒストグラム・ガントチャートのPDFを作ります。</p>
 
   <div class="card">
-    <div class="step"><div class="n">1</div><div><a href="https://nrid.nii.ac.jp/ja/" target="_blank" rel="noopener">KAKEN 研究者をさがす</a> の詳細検索で、<b>研究機関</b>に調べたい大学・機関名を入れて検索</div></div>
+    <div class="step"><div class="n">1</div><div><a href="https://nrid.nii.ac.jp/ja/" target="_blank" rel="noopener">KAKEN 研究者をさがす</a> の詳細検索を開き、研究者情報の<b>所属機関</b>に調べたい大学・機関名を入れて検索</div></div>
     <div class="step"><div class="n">2</div><div><b>Select All → Export in JSON</b> を実行してJSONを保存（1回1万件まで）</div></div>
     <div class="step"><div class="n">3</div><div>保存したJSONを下の枠にドロップすると、その場でPDFができあがります</div></div>
   </div>
@@ -154,6 +154,9 @@
     <summary>仕組み・注意点</summary>
     <p><strong>データはこのページから外部に送信されません。</strong>
     すべての処理はお使いのブラウザの中だけで行われます（アップロードなし・サーバなし・APIキー不要）。</p>
+    <p>検索は必ず研究者情報の「<strong>所属機関</strong>」欄で行ってください。
+    研究課題情報の「研究機関」欄で検索すると、その機関に所属したことのない
+    他機関の研究分担者まで大量に含まれ、集計が歪みます。</p>
     <p>このページは <a href="https://pyodide.org/" target="_blank" rel="noopener">Pyodide</a>（ブラウザ内Python）で
     <a href="https://github.com/rma-lab/kaken-history" target="_blank" rel="noopener">kaken-history</a> の分析コードをそのまま実行しています。
     初回はPython実行環境（約30MB）のダウンロードに少し時間がかかります。

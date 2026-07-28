@@ -36,7 +36,7 @@ KAKEN「**研究者をさがす**」からダウンロードした JSON（人単
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rma-lab/kaken-history/blob/main/kaken-history.ipynb)
 
 1. 上のバッジから Colab を開く
-2. [KAKEN 研究者をさがす](https://nrid.nii.ac.jp/ja/) で **研究機関＝自機関** を検索 →
+2. [KAKEN 研究者をさがす](https://nrid.nii.ac.jp/ja/) の詳細検索で、研究者情報の **所属機関＝自機関** を検索 →
    結果画面で **Select All → Export in JSON**（1回1万件まで。超える大規模機関は分割）
 3. Colab のセルを上から実行し、JSON をアップロード → 機関名を入力 → PDF をダウンロード
 
@@ -112,6 +112,8 @@ KAKEN 公開 XML の構造に基づき、以下のように処理しています
 - 研究期間は `periodOfAward` の `searchStartFiscalYear` / `searchEndFiscalYear`。
 - `projectStatus@statusCode="declined"`（不採択・辞退）は獲得実績でないため除外。
 - 種目名の全角ゆれ（`基盤研究(Ｃ)` など）は正規化。
+- 研究者JSONの検索は**研究者情報の「所属機関」欄**で行う。研究課題情報の「研究機関」欄で
+  検索すると、その機関に所属したことのない他機関の研究分担者まで大量に含まれ、集計が歪む。
 
 公式仕様・マスタ:
 - XML/JSON 定義書: <https://bitbucket.org/niijp/kaken_definition>
