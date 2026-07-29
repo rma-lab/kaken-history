@@ -10,6 +10,7 @@ from pathlib import Path
 INSTITUTIONS = {
     "jaist": "北陸先端科学技術大学院大学",
     "fukushima": "福島大学",
+    "okayama": "岡山大学",
 }
 
 DEFAULT_KEY = "jaist"
